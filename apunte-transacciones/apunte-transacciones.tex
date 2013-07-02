@@ -1,0 +1,121 @@
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{listings}
+\usepackage{babel}
+
+\newtheorem{thm}{\protect\theoremname}
+\theoremstyle{definition}
+\newtheorem*{example*}{\protect\examplename}
+\theoremstyle{definition}
+\newtheorem{example}[thm]{\protect\examplename}
+\providecommand{\examplename}{Ejemplo}
+\newtheorem*{defn*}{\protect\definitionname}
+\providecommand{\definitionname}{Definición}
+
+
+\begin{document}
+
+\title{Control de concurrencia y recuperación en bases de datos}
+
+
+\section{Transacciones y serializabilidad}
+
+Construiremos un modelo para estudiar los problemas de concurrencia en bases
+de datos. En este modelo, veremos a la base de datos como un conjunto de
+ítems. Un ítem puede ser un atributo, una tupla o una relación entera; los
+denominaremos con letras: $A$, $B$, $X$, $Y$.
+
+\subsection{Transacciones}
+
+\begin{defn*}
+Llamaremos \textbf{transacción} a toda ejecución de un programa que accede a
+la base de datos. El programa puede ejecutarse varias veces, y cada ejecución
+del programa representa una nueva transacción $T_i$.
+
+La transacción es una sucesión de acciones (u operaciones), que representan
+pasos atómicos. Estas acciones pueden ser:
+
+\begin{itemize}
+    \item Leer un ítem X ($r_i[X]$).
+    \item Escribir un ítem X ($w_i[X]$).
+    \item \emph{Abort} de la transacción $T_i$ ($a_i$).
+    \item \emph{Commit} de la transacción $T_i$ ($c_i$).
+\end{itemize}
+
+Luego, una definición más precisa de transacción es la siguiente: $T_i$ es una
+transacción si y sólo si:
+
+$$T_i \subseteq \
+    \{r_i[X], w_i[X], a_i, c_i: \
+        X \mbox{ es un ítem, } i \in \mathbb{N}\}$$
+\end{defn*}
+
+El modelo en el que encaja la definición anterior es el llamado \emph{modelo
+read/write} o \emph{modelo sin locking}. En él, las $T_i$ se ejecutan en forma
+concurrente (entrelazada) y esto, veremos luego, puede llevar a la ocurrencia
+de interferencias. Asimismo, pueden ocurrir fallas en medio de la ejecución de
+la transacción. Trataremos esto último más adelante, cuando hablemos de
+recuperación.
+
+Dos problemas clásicos que pueden presentarse son conocidos como \emph{lost
+update} y \emph{dirty read}.
+
+\subsection{Lost update}
+
+El \emph{lost update} o actualización perdida ocurre cuando la actualización
+hecha por una transacción $T_1$ se pierde a causa de la acción de otra
+transacción $T_2$ sobre el mismo ítem; ambas transacciones leen el mismo valor
+anterior del ítem y luego lo actualizan en forma sucesiva.
+
+\begin{example}
+Supongamos el programa $P$:
+\begin{enumerate}
+    \item $Read(A)$
+    \item $A := A + 1$
+    \item $Write(A)$
+\end{enumerate}
+
+La función $Read(A)$ copia el valor del ítem $A$ en disco a la variable local
+$A$. De manera inversa, $Write(A)$ copia el valor de la variable local $A$ al
+disco. $A := A + 1$ actualiza el valor de la variable local.
+
+Supongamos ahora dos ejecuciones de $P$, $T_1$ y $T_2$, con el siguiente
+entrelazamiento:
+
+\vspace{10pt}
+
+\begin{tabular}{ l l l }
+  $T_1$         & $T_2$         & A (en disco)  \\
+  \hline
+  $Read(A)$     &               & 5             \\
+                & $Read(A)$     & 5             \\
+  $A := A + 1$  &               & 5             \\
+                & $A := A + 1$  & 5             \\
+                & $Write(A)$    & 6             \\
+  $Write(A)$    &               & 6             \\
+\end{tabular}
+
+\vspace{10pt}
+
+Notar que ocurre la siguiente secuencia:
+\begin{enumerate}
+    \item $T_1$ y $T_2$ leen el valor de $A$ desde el disco y lo almacenan en
+        su variable local homónima.
+    \item $T_1$ y $T_2$ actualizan el valor de su variable local $A$.
+    \item $T_2$ escribe el valor actualizado de $A$ en disco, y luego lo hace
+        $T_1$.
+\end{enumerate}
+
+Naturalmente, uno esperaría que, luego de la ejecución de ambas transacciones,
+el valor de $A$ en disco fuera incrementado dos veces. Sin embargo, al
+ejecutar las transacciones concurrentemente, puede ocurrir que la
+actualización de una de las dos transacciones se pierda, como se observa en el
+ejemplo.
+\end{example}
+
+
+\end{document}

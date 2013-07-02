@@ -1,0 +1,480 @@
+%% LyX 2.0.3 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{babel}
+
+\newtheorem{thm}{\protect\theoremname}
+\theoremstyle{definition}
+\newtheorem*{example*}{\protect\examplename}
+\theoremstyle{definition}
+\newtheorem{example}[thm]{\protect\examplename}
+\providecommand{\examplename}{Ejemplo}
+\newtheorem*{defn*}{\protect\definitionname}
+\providecommand{\definitionname}{Definición}
+
+
+
+\begin{document}
+
+\title{Normalización}
+
+
+\section{Modelo Relacional}
+
+Usaremos la siguiente notación:
+\begin{itemize}
+	\item $R, S$: Esquemas de relación.
+	\item $A_1, A_2, \dots, A_n$: Atributos de un esquema de relación (también
+		podremos usar $A, B, C$ y demás letras, de las primeras del alfabeto,
+		para lo mismo).
+	\item $r, s$: Instancias de esquemas de relación.
+	\item $t_1, t_2, \dots$: Tuplas de una instancia.
+	\item $t(A_1, A_2, \dots, A_n)$: Proyección de los atributos $A_1, A_2,
+		\dots, A_n$ para la tupla $t$.
+	\item $X$, $Y$: Conjuntos de atributos de un esquema de relación.
+\end{itemize}
+
+
+\section{Dependencias Funcionales}
+
+
+\subsection{Definición de Dependencia Funcional}
+
+\begin{defn*}
+Sea $R$ un esquema de relación. Sean $X$ e $Y$ conjuntos no vaciós de
+atributos de $R$ (pueden no ser disjuntos). Decimos que $X$
+\emph{determina funcionalmente} a $Y$ (notado $X \rightarrow Y$) en $R$, si
+para toda instancia $r$ de $R$, se verifica que:
+
+\begin{center}
+si $t_1(X) = t_2(X)$, entonces $t_1(Y) = t_2(Y)$
+\end{center}
+
+siendo $t_1$ y $t_2$ tuplas cualesquiera de $r$.
+\end{defn*}
+
+Si una instancia $r$ cumple con todas las dependencias funcionales, decimos
+que $r$ es \emph{legal}. Las dependencias funcionales son establecidas por el
+diseñador de la base de datos.
+
+\begin{example}
+\label{ej:df}
+Supongamos que queremos registrar, para una Facultad, los datos personales de
+los alumnos, las materias en las que se inscribieron y los exámenes que
+rindieron. Para esto definimos el siguiente esquema de relación:
+
+$$Facultad(lu, nombre, materia, ifec, efec, nota)$$
+
+y el siguiente conjunto de dependencias funcionales:
+\begin{itemize}
+	\item $lu \rightarrow nombre$ (no puede haber dos alumnos con el mismo
+		$lu$)
+	\item $lu, materia \rightarrow ifec$ (el alumno se puede inscribir una
+		sola vez en cada materia)
+	\item $lu, materia, efec \rightarrow nota$ (hay una sola nota por examen)
+\end{itemize}
+
+Nota: Al no estar $lu, materia \rightarrow efec$, se puede rendir varias veces
+la misma materia.
+\end{example}
+
+
+\subsection{Inferencias de un conjunto de dependencias funcionales}
+
+Sean $F$ y $f$ conjuntos de dependencias funcionales. Decimos que $F$
+\emph{infiere} $f$ (notado $F \models f$) si y sólo si toda instancia $r$ que
+satisface $F$ también satisface $f$.
+
+\begin{example}
+Llamemos $F$ al conjunto de dependencias funcionales dado en el ejemplo
+\ref{ej:df}. Podemos inferir:
+$F \models lu, nombre \rightarrow nombre, ifec$
+\end{example}
+
+
+\subsection{Reglas de inferencia (axiomas de Armstrong)}
+
+\begin{enumerate}
+	\item \label{regla:refl} Reflexividad: Si $Y \subseteq X$, entonces
+		$X \rightarrow Y$.
+	\item Aumento: Para cualquier $W$, si $X \rightarrow Y$, entonces
+		$XW \rightarrow WY$.
+	\item Transitividad: Si $X \rightarrow Y$ e $Y \rightarrow Z$, entonces
+		$X \rightarrow Z$.
+\end{enumerate}
+
+De la regla \ref{regla:refl}, inferimos que siempre se cumple
+$X \rightarrow X$.
+
+Notar que no necesariamente si se cumple $X \rightarrow Y$, debe cumplirse
+$Y \rightarrow X$.
+
+
+\subsection{Clausura de un conjunto de dependencias funcionales}
+
+La \emph{clausura de un conjunto de dependencias funcionales} $F$, notada
+$F^+$, es el conjunto de todas las dependencias funcionales que pueden
+inferirse a partir de $F$ aplicando los axiomas. Es decir,
+
+$$F^+ = \{X \rightarrow Y: F \models X \rightarrow Y\}$$
+
+\begin{example}
+Sea el esquema de relación $R(A, B)$ y el conjunto de dependencias funcionales
+$F = \{A \rightarrow B\}$. Calculamos la clausura de $F$:
+
+$$F^+ = \{A \rightarrow B, A \rightarrow A, B \rightarrow B, AB \rightarrow A,
+	AB \rightarrow B, AB \rightarrow AB, A \rightarrow AB\}$$
+\end{example}
+
+\begin{example}
+Sea el esquema de relación $R(A, B, C)$ y el conjunto de dependencias funcionales
+$F = \{AB \rightarrow C, C \rightarrow B\}$. Calculamos la clausura de $F$:
+
+\begin{multline*}
+F^+ = \{A \rightarrow A, AB \rightarrow A, AC \rightarrow A,
+	ABC \rightarrow A, B \rightarrow B, AB \rightarrow B, \\
+	BC \rightarrow B, ABC \rightarrow B, ABC \rightarrow B,
+	C \rightarrow C\, AC \rightarrow C, BC \rightarrow C, \\
+	ABC \rightarrow C, AB \rightarrow AB, ABC \rightarrow AB,
+	AC \rightarrow AC, ABC \rightarrow AC, \\
+	BC \rightarrow BC, ABC \rightarrow BC, ABC \rightarrow ABC,
+	AB \rightarrow C, AB \rightarrow AC, \\
+	AB \rightarrow BC, AB \rightarrow ABC, C \rightarrow B,
+	C \rightarrow BC, AC \rightarrow B, AC \rightarrow AB \}
+\end{multline*}
+\end{example}
+
+\subsection{Reglas adicionales}
+\begin{enumerate}
+	\setcounter{enumi}{3}
+	\item Unión: Si $X \rightarrow Y$ y $X \rightarrow Z$, entonces
+		$X \rightarrow YZ$.
+	\item Pseudotransitividad: Para cualquier $W$, si $X \rightarrow Y$ e
+		$YW \rightarrow Z$, entonces $XW \rightarrow Z$.
+	\item Descomposición: Si $X \rightarrow YZ$, entonces $X \rightarrow Y$ y
+	$X \rightarrow Z$.
+\end{enumerate}
+
+Estas reglas adicionales se demuestran aplicando los axiomas.
+
+\begin{example}
+\end{example}
+
+\begin{example}
+\end{example}
+
+\subsection{Clausura de un conjunto de atributos}
+La clausura del conjunto de atributos $X$, de un esquema de relación $R$, con
+respecto a un conjunto de dependencias funcionales $F$, se nota $X+$ y se
+define:
+
+$$X^+ = \{A \in R: F \models X \rightarrow A\}$$
+
+Una forma de calcular $X^+$ es [...]
+
+\subsection{Propiedades de la clausura de un conjunto de atributos}
+
+Dados [...]
+
+\newpage
+
+\section{Apunte para el parcial}
+
+\begin{defn*}
+	Un \textbf{atributo primo} es aquel que es miembro de una clave candidata.
+\end{defn*}
+
+\begin{defn*}
+	Decimos que $X \rightarrow Y$ es una \textbf{dependencia funcional
+	parcial} (o que $Y$ depende parcialmente de $X$) si para algún
+	$Z \subset X$, se verifica que $Z \rightarrow Y$.
+
+	Si no, decimos que es una \textbf{dependencia funcional total} (o que $Y$
+	depende totalmente de $X$).
+\end{defn*}
+
+\subsection{Formas normales}
+
+\begin{itemize}
+	\item \textbf{1FN:} Se cumple siempre en los casos que vemos. Sólo exige
+		que los campos tengan valores atómicos, es decir, no sean listas o
+		conjuntos.
+	\item \textbf{2FN:} Si todo atributo no primo (no miembro de alguna clave)
+		es totalmente dependiente de todas las claves de la relación.
+		
+		O sea, tengo que tomar una a una las claves $X$ de la relación y
+		verificar que para cada atributo no primo $Y$, se cumpla
+		$X \rightarrow Y$ y además $X$ no tenga atributos redundantes.
+	\item \textbf{3FN:} Si para cada DF no trivial $X \rightarrow A$:
+		\begin{itemize}
+			\item $X$ es superclave, o
+			\item $A$ es un atributo primo (está en alguna clave)
+		\end{itemize}
+	\item \textbf{FNBC:} Lo mismo que \textbf{3FN} pero sin el último ítem.
+\end{itemize}
+
+\subsection{Cubrimiento minimal}
+
+\begin{enumerate}
+	\item \textbf{Usar descomposición para tener las DFs con un
+		solo atributo a derecha.} \\
+		Por ejemplo, si tengo la DF $X \rightarrow YZ$, la reemplazo por
+		$X \rightarrow Y$ y $X \rightarrow Z$.
+	\item \textbf{Minimizar lados izquierdos viendo qué atributos se pueden
+		sacar preservando equivalencia con $F^+$.} Para esto, tomo DFs con
+		varios atributos en su lado izquierdo y voy sacando atributos de a uno
+		y haciendo la clausura sin ese atributo. La clausura la hago usando
+		todas las dependencias funcionales originales, incluyendo la
+		dependencia que estoy analizando (completa). Si lo que estaba en el
+		lado derecho aparece en la clausura, entonces ese atributo era
+		redundante. \\
+		Por ejemplo, si tengo $CE \rightarrow A$ y obtengo que $C^+ = ABC$,
+		entonces reemplazo $CE \rightarrow A$ por $C \rightarrow A$ (el
+		atributo $E$ era redundante).
+	\item \textbf{Quitar DFs redundantes.} Para cada DF $X \rightarrow Y$,
+		calculamos $X^+_{\bullet - (X \rightarrow Y)}$, esto es, la clausura
+		de $X$ usando todas las DFs excepto $X \rightarrow Y$. Si en el
+		resultado se encuentra $Y$, entonces la DF $X \rightarrow Y$ era
+		redundante y podemos eliminarla.
+\end{enumerate}
+
+
+\subsection{Descomposición en 3FN SPI y SPDF}
+
+Parto de un cubrimiento minimal.
+
+\begin{enumerate}
+	\item Convertir cada DF $X \rightarrow A$ en un esquema $XA$ (mismo
+		lado izquierdo, se juntan)
+	\item Si ningún esquema contiene una clave, agregar uno con los
+		atributos de alguna clave.
+	\item Eliminar esquemas redundantes (los contenidos totalmente en otro)
+\end{enumerate}
+
+
+\subsection{Descomposición en FNBC SPI (quizás no SPDF)}
+
+\begin{enumerate}
+	\item Computar claves de $R$.
+	\item Repetir hasta que todas las relaciones estén en FNBC:
+		\begin{enumerate}
+			\item Tomar algún $R'$ con $A \rightarrow B$ que viole FNBC.
+			\item Descomponer $R'$ en $R_1(A, B)$ y $R_2 = R - B$.
+			\item Computar DFs de $R_1$ y $R_2$. Para esto, se debe aplicar el
+                siguiente algoritmo (reemplazar $i$ por 1 o 2 según para cuál
+                se esté proyectando):
+                \begin{enumerate}
+                    \item $T = \emptyset$
+                    \item Para cada $X$, subconjunto de $R_i$:
+                        \begin{enumerate}
+                            \item Computar $X^+$ usando las DFs de $R$.
+                            \item Agregar a $T$ todas las DFs no triviales
+                                $X \rightarrow A$ tales que $A$ está en $X^+$
+                                y es un atributo de $R_i$.
+                        \end{enumerate}
+                \end{enumerate}
+			\item Computar claves de $R_1$ y $R_2$.
+		\end{enumerate}
+\end{enumerate}
+
+
+\subsection{Verificación de SPI}
+
+Usar algoritmo del Tableau.
+
+\subsection{Verificación de SPDF}
+
+Para cada DF $X \rightarrow Y$, analizo si se preserva:
+\begin{enumerate}
+	\item Si $XY \in R_i$, entonces se preserva.
+	\item Si no:
+		\begin{enumerate}
+			\item $Z = X$
+			\item Mientras $Z$ cambie:\\
+				Para $i = 1, \dots, k$:
+				\begin{enumerate}
+					\item $Z = Z \cup ((Z \cap R_i)^+ \cap R_i)$
+					\item Si $Y \in Z$, entonces se preserva.
+				\end{enumerate}
+			\item No se preserva.
+		\end{enumerate}
+\end{enumerate}
+
+
+\part{Ejercicios de parciales}
+
+\section{Primer Parcial: 1C2013}
+
+\subsection{Ejercicio 2}
+
+\subsubsection{Inciso a)}
+
+$$\rho(pa1, Participo \bowtie Actor)$$
+$$\rho(pa2, Participo \bowtie Actor)$$
+$$\rho(pa3, Participo \bowtie Actor)$$
+$$\rho(pa1ypa2, pa1
+	\bowtie_{pa1.idPeli = pa2.idPeli AND pa1.idPais \not= pa2.idPais} pa2)$$
+$$\rho(pa1ypa2ypa3, pa1ypa2
+	\bowtie_{pa1ypa2.idPeli = pa3.idPeli AND pa1.idPais \not= pa3.idPais AND
+		pa2.idPais \not= pa3.idPais} pa3)$$
+$$\rho(peliConAct2Nac, \Pi_{idPeli}(pa1ypa2) - \Pi_{idPeli}(pa1ypa2ypa3))$$
+$$\rho(peli1, peliConAct2Nac \bowtie Pelicula)$$
+$$\rho(peli2, peliConAct2Nac \bowtie Pelicula)$$
+$$\rho(peliNoMayor, \Pi_{peli1.idPeli}
+	(peli1 \bowtie_{peli1.duracion < peli2.duracion} peli2))$$
+$$\Pi_{nombre}((peliConAct2Nac - \Pi_{idPeli}peliNoMayor) \bowtie Pelicula)$$
+
+\subsubsection{Inciso b)}
+
+\begin{lstlisting}
+SELECT a.nombre
+FROM Actor a
+WHERE
+    100 < (SELECT COUNT(*)
+        FROM Actor a2
+        WHERE a2.idPais = a.idPais)
+    AND
+    NOT EXISTS (
+        SELECT 1
+        FROM Genero g
+        WHERE
+            NOT EXISTS (
+                SELECT 1
+                FROM Pelicula p, Participo par
+                WHERE p.idPeli = par.idPeli AND
+                    par.idActor = a.idActor AND
+                    p.idGenero = g.idGenero
+            )
+    )
+\end{lstlisting}
+
+\subsection{Ejercicio 3}
+
+\subsubsection{Inciso 1}
+
+$(AF)^+ = ABDCEFGH$, por lo que $AF$ es clave. Y es la única. Esto es porque
+$A$ y $F$ no están en ningún lado derecho y, por lo tanto, son parte de todas
+las claves posibles. Como cualquier otra superclave tendrá más atributos, $AF$
+es la única clave.
+
+\subsubsection{Inciso 2}
+
+\begin{itemize}
+    \item \textbf{¿FNBC?} No. Por ejemplo, en $H \rightarrow G$, $H$ no es
+        superclave.
+    \item \textbf{¿3FN?} No. Por ejemplo, en $H \rightarrow G$, $H$ no es
+        superclave y $G$ no es un atributo primo (no está en ninguna clave).
+    \item \textbf{¿2FN?} No. Tomemos el atributo no primo $E$. Tenemos que
+        $AF \rightarrow E$, porque $AF$ es clave. Sin embargo, tenemos que
+        $F \rightarrow E$. Luego, $E$ depende parcialmente de la clave $AF$.
+    \item \textbf{¿1FN?} Sí.
+\end{itemize}
+
+\subsubsection{Inciso 3}
+
+\begin{enumerate}
+    \item
+        \begin{itemize}
+            \item $AB \rightarrow H$
+            \item $AB \rightarrow G$
+            \item $B \rightarrow D$
+            \item $BD \rightarrow C$
+            \item $E \rightarrow G$
+            \item $E \rightarrow C$
+            \item $F \rightarrow D$
+            \item $F \rightarrow B$
+            \item $F \rightarrow E$
+            \item $H \rightarrow G$
+        \end{itemize}
+    \item
+        \begin{itemize}
+            \item Caso $AB \rightarrow H$. $A^+ = A$. $B^+ = BCD$. No consigo
+                $H$.
+            \item Caso $AB \rightarrow G$. $A^+ = A$. $B^+ = BCD$. No consigo
+                $G$.
+            \item Caso $BD \rightarrow C$. $B^+ = BCD$. Consigo $C$. Reemplazo
+                la DF por $B \rightarrow C$.
+        \end{itemize}
+    \item
+        \begin{itemize}
+            \item $(AB)^+_{\bullet - (AB \rightarrow H)} = ABCDG$. No consigo
+                $H$.
+            \item $(AB)^+_{\bullet - (AB \rightarrow G)} = ABCDGH$. Consigo
+                $G$. Esta DF es redundante.
+            \item $B^+_{\bullet - (B \rightarrow D)} = BC$. No consigo $D$.
+            \item $B^+_{\bullet - (B \rightarrow C)} = BD$. No consigo $C$.
+            \item $E^+_{\bullet - (E \rightarrow G)} = EC$. No consigo $G$.
+            \item $E^+_{\bullet - (E \rightarrow C)} = EG$. No consigo $C$.
+            \item $F^+_{\bullet - (F \rightarrow D)} = BCDEFG$. Consigo $D$.
+                Esta DF es redundante.
+            \item $F^+_{\bullet - (F \rightarrow B)} = CDEFG$. No consigo $B$.
+            \item $F^+_{\bullet - (F \rightarrow E)} = BCDF$. No consigo $E$.
+            \item $H^+_{\bullet - (H \rightarrow G)} = H$. No consigo $G$.
+        \end{itemize}
+\end{enumerate}
+
+La cobertura minimal queda:
+\begin{itemize}
+    \item $AB \rightarrow H$
+    \item $B \rightarrow D$
+    \item $B \rightarrow C$
+    \item $E \rightarrow G$
+    \item $E \rightarrow C$
+    \item $F \rightarrow B$
+    \item $F \rightarrow E$
+    \item $H \rightarrow G$
+\end{itemize}
+
+\subsubsection{Inciso 4}
+
+\begin{enumerate}
+    \item $\{ABH, BDC, EGC, FBE, HG\}$
+    \item $\{ABH, BDC, EGC, FBE, HG, AF\}$
+    \item $\{ABH, BDC, EGC, FBE, HG, AF\}$
+\end{enumerate}
+
+\subsubsection{Inciso 5}
+
+Las relaciones de 2 atributos, están en FNBC. Para las otras, tengo que
+proyectar las DFs iniciales y verificarlo.
+\begin{itemize}
+    \item Caso $ABH$. Calculo:
+        \begin{itemize}
+            \item $A^+=A$
+            \item $B^+=BCD$
+            \item $H^+=GH$
+            \item $(AB)^+=ABCDGH$
+            \item $(AH)^+=AHG$
+            \item $(BH)^+=BCDGH$
+        \end{itemize}
+        Las dependencias serán:
+        \begin{itemize}
+            \item $AB \rightarrow H$
+        \end{itemize}
+        Como $AB$ es superclave, $ABH$ está en FNBC.
+    \item Caso $BCD$. Calculo:
+        \begin{itemize}
+            \item $B^+=BCD$
+            \item $C^+=C$
+            \item $D^+=D$
+            \item $(BC)^+=BCD$
+            \item $(BD)^+=BCD$
+            \item $(CD)^+=CD$
+        \end{itemize}
+        Las dependencias serán:
+        \begin{itemize}
+            \item $B \rightarrow C$
+            \item $B \rightarrow D$
+            \item $BC \rightarrow D$
+            \item $BD \rightarrow C$
+        \end{itemize}
+        Como todos los lados izquierdos son superclave, $BCD$ está en FNBC.
+    \item TODO: Faltaría hacer lo mismo con $EGC$ y $FBE$.
+\end{itemize}
+
+\end{document}
