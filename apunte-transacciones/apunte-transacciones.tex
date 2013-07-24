@@ -1,12 +1,14 @@
-\documentclass[english]{article}
+\documentclass[english,titlepage]{article}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{amsthm}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{listings}
-\usepackage{babel}
 \usepackage{tikz}
+
+\def\spanishoptions{es-noquoting,es-nolists}
+\usepackage[spanish]{babel}
 
 \newtheorem{thm}{\protect\theoremname}
 \theoremstyle{definition}
@@ -22,8 +24,14 @@
 
 \begin{document}
 
-\title{Control de concurrencia y recuperación en bases de datos}
+% TODO: Motivar recuperabilidad. Agregar ejemplos importantes que falten. Dar
+% última mirada.
+\title{Control de concurrencia y \\recuperación en bases de datos}
+\maketitle
 
+\tableofcontents
+
+\newpage
 
 \section{Transacciones y serializabilidad}
 
@@ -36,7 +44,7 @@ Un \textbf{ítem} puede ser un atributo, una tupla o una relación entera; los
 denominaremos con letras: $A$, $B$, $X$, $Y$.
 \end{defn*}
 
-\subsection{Transacciones}
+\subsection{Definición de transacción}
 
 \begin{defn*}
 Llamaremos \textbf{transacción} a toda ejecución de un programa que accede a
@@ -68,10 +76,12 @@ de interferencias. Asimismo, pueden ocurrir fallas en medio de la ejecución de
 la transacción. Trataremos esto último más adelante, cuando hablemos de
 recuperación.
 
-Dos problemas clásicos que pueden presentarse son conocidos como \emph{lost
-update} y \emph{dirty read}.
+\subsection{Algunos problemas clásicos}
 
-\subsection{\emph{Lost update}}
+A continuación, observamos algunas situaciones poco convenientes que pueden
+darse en el modelo que estamos presentando.
+
+\subsubsection{\emph{Lost update}}
 
 El \emph{lost update} o actualización perdida ocurre cuando la actualización
 hecha por una transacción $T_1$ se pierde a causa de la acción de otra
@@ -123,13 +133,17 @@ transacciones concurrentemente, puede ocurrir que la actualización por parte
 de una de las dos transacciones se pierda, como se observa en el ejemplo.
 \end{example}
 
-\subsection{\emph{Dirty read}}
+\subsubsection{\emph{Dirty read}}
 
 Supongamos que tenemos dos transacciones $T_1$ y $T_2$. Supongamos también que
 ambas operan sobre un mismo ítem $A$ en disco. Al ejecutarlas de manera
-concurrente, podría darse la situación en que $T_1$ altere el valor del ítem
-$A$ en disco, que $T_2$ tome ese valor alterado para operar y que luego $T_1$,
-por alguna razón, falle.
+concurrente, podría darse la situación en que:
+
+\begin{enumerate}
+    \item $T_1$ altera el valor del ítem $A$ en disco.
+    \item $T_2$ toma ese valor alterado para operar.
+    \item $T_1$, por alguna razón, falla.
+\end{enumerate}
 
 Podríamos decidir que una característica deseable de las transacciones sea la
 de ejecutarse siempre completamente o directamente no ejecutarse. En ese caso,
@@ -199,7 +213,7 @@ Notar lo siguiente:
 \end{enumerate}
 \end{example}
 
-\subsection{\emph{Non-repeatable read}}
+\subsubsection{\emph{Non-repeatable read}}
 
 El problema del \emph{non-repeatable read} se da cuando:
 \begin{enumerate}
@@ -211,7 +225,7 @@ El problema del \emph{non-repeatable read} se da cuando:
 
 El ejemplo queda como ejercicio para el lector. 
 
-\subsection{\emph{Phantom read}}
+\subsubsection{\emph{Phantom read}}
 
 El problema del \emph{phantom read} puede verse como un caso particular del
 \emph{non-repeatable read}, siendo el origen de la lectura un \emph{query} y
@@ -233,7 +247,7 @@ de datos quede también en un estado consistente:
         la base de datos de un estado consistente a otro consistente.
         
         La consistencia o no de la base de datos está dada por restricciones o
-        expectativas que se tienen sobre ella. Por ejemplo, en una tabla de
+        expectativas que se tienen sobre ella; por ejemplo, en una tabla de
         empleados, que el sueldo no sea negativo. Para que se cumpla esta
         propiedad, es necesario que los programas sean correctos.
     \item A\textbf{i}slamiento: Las transacciones se ejecutan sin
@@ -309,7 +323,8 @@ como correctas.
 \subsubsection{Historias serializables}
 
 \begin{defn*}
-Una historia es \textbf{serializable} si es equivalente a una historia serial.
+Una historia es \textbf{serializable} (SR) si es equivalente a una historia
+serial.
 \end{defn*}
 
 \subsubsection{Grafo de precedencia}
@@ -409,7 +424,7 @@ Una historia es legal si:
         esperar hasta que la última libere el \emph{lock}.
 \end{itemize}
         
-\subsubsection{Grafo de precedencia}
+\subsection{Grafo de precedencia}
 
 El grafo de precedencia en el modelo basado en \emph{locking} se define igual
 que como lo hicimos anteriormente, sólo que entendemos el conflicto según las
@@ -444,9 +459,10 @@ grafo de precedencia $SG(H)$:
 
     \foreach \from/\to in
         {t1/t2, t2/t3}
-    \draw [->] (\from) -- (\to);
-
+    \draw [->, line width=1pt] (\from) -- (\to);
 \end{tikzpicture}
+
+\vspace{10pt}
 
 Observamos que sí es serializable (el grafo no tiene ciclos) y es equivalente
 a la historia serial $H_s = T_1, T_2, T_3$.
@@ -487,24 +503,61 @@ precedencia, observamos que este tiene ciclos, lo que nos indica que la
 historia no es serializable.
 \end{example}
 
+\subsection{\emph{Locking} y serializabilidad}
 
-\newpage
+Podríamos preguntarnos si el hecho de utilizar \emph{locking} nos garantiza,
+siempre que las historias sean legales, serializabilidad. No es difícil
+comprobar que pueden darse casos en los que esto no ocurre.
 
-\section{Apuntes para el parcial}
+\begin{example}
+Supongamos la siguiente historia: \\
+$H = l_1[A], u_1[A], l_2[A], l_2[B], u_2[A], u_2[B], l_1[B], u_1[B]$
 
-\subsection{\emph{Locking}}
+Observar que esta historia es legal. Construyamos su grafo de precedencia
+$SG(H)$: 
+
+\vspace{10pt}
+
+\begin{tikzpicture}
+    [every node/.style={circle,draw=black}]
+    \node (t1) at (0,0) {$T_1$};
+    \node (t2) at (2,0) {$T_2$};
+
+    \foreach \from/\to in
+        {t1/t2, t2/t1}
+    \draw [->,line width=1pt] (\from) to[bend right] (\to);
+\end{tikzpicture}
+
+\vspace{10pt}
+
+Vemos que hay un ciclo, por lo que $H$ no es serializable.
+\end{example}
+
+Luego, si se busca serializabilidad, hace falta más que usar \emph{locks}.
+Hace falta aplicar un protocolo sobre el uso de ellos que sí nos permita
+garantizar que la historia es serializable.
+
+\subsubsection{Protocolo \emph{Two Phase Locking} (2PL)}
+
+La idea es que cada transacción conste de dos fases: Una primera, de
+crecimiento, en la que la transacción va haciéndose de \emph{locks} para los
+ítems que luego va a precisar, y una segunda fase, de decrecimiento, en la que
+libera todos los \emph{locks} que adquirió.
 
 \begin{defn*}
 Una transacción $T$ es \textbf{2PL} (\emph{two phase locking}) si todos los
 \emph{locks} preceden al primer \emph{unlock}.
 \end{defn*}
 
+El siguiente teorema nos asegura que usando este protocolo obtenemos lo que
+estábamos buscando.
+
 \begin{thm*}
 Sea un conjunto de transacciones. Si toda transacción en el conjunto es 2PL,
 entonces toda historia legal sobre ese conjunto es serializable.
 \end{thm*}
 
-\subsection{Recuperabilidad}
+\section{Recuperabilidad}
 
 \begin{defn*}
 Definimos el operador $<$, para las acciones, del siguiente modo:
@@ -516,14 +569,9 @@ ejecución.
 Sean las transacciones $T_i$ y $T_j$. Decimos que $T_i$ \textbf{lee de} $T_j$
 en una historia $H$, si se da algún caso en que $T_j$ es la última transacción
 que escribió en $X$, y no abortó, al momento en que $T_i$ lee de $X$.
-
-%\begin{enumerate}
-%    \item $\exists w_j[X], r_i[X] \in H$ y $w_j[X] < r_i[X]$
-%    \item $\not\exists a_j \in H: a_j < r_i[X]$
-%\end{enumerate}
 \end{defn*}
 
-\subsubsection{Clasificación de historias según recuperabilidad}
+\subsection{Clasificación de historias según recuperabilidad}
 \begin{itemize}
 	\item \textbf{RC (Recuperable):} Si siempre que una transacción lee de
         otra, esta última hizo \emph{commit} antes que la primera lo haga.
@@ -541,7 +589,7 @@ Se cumple que:
 $$ ST \subset ACA \subset RC$$
 \end{thm*}
 
-\subsubsection{Recuperabilidad y serializabilidad}
+\subsection{Recuperabilidad y serializabilidad}
 
 Recuperabilidad y serializabilidad son conceptos ortogonales. Hay historias
 serializables en no RC, RC, ACA y ST.
@@ -558,6 +606,5 @@ ningún \emph{lock} exclusivo (\emph{write lock}) hasta después de haber hecho
 Toda historia que cumple 2PL estricto (sus transacciones cumplen 2PL estricto)
 es SR, en cuanto serializabilidad, y ST, en cuanto a recuperabilidad.
 \end{thm*}
-
 
 \end{document}
